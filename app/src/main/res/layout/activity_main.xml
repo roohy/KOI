@@ -16,7 +16,8 @@
             xmlns:tools="http://schemas.android.com/tools"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:visibility="gone">
 
             <com.facebook.widget.LoginButton
                 android:id="@+id/authButton"
@@ -33,7 +34,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:visibility="gone"
+            android:visibility="visible"
             xmlns:card="http://schemas.android.com/apk/res-auto" >
 
             <it.gmariotti.cardslib.library.view.CardListView

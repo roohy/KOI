@@ -24,6 +24,7 @@ import android.widget.TextView;
 
 import it.gmariotti.cardslib.library.internal.Card;
 import it.gmariotti.cardslib.library.internal.CardArrayAdapter;
+import it.gmariotti.cardslib.library.internal.CardExpand;
 import it.gmariotti.cardslib.library.internal.CardHeader;
 import it.gmariotti.cardslib.library.internal.CardThumbnail;
 import it.gmariotti.cardslib.library.view.CardListView;
@@ -101,7 +102,30 @@ public class MainActivity extends ActionBarActivity
             header.setTitle("Angry bird: " + i);
             card.setTitle("sample title");
             card.addCardHeader(header);
-
+            CardExpand expand = new CardExpand(this.getBaseContext());
+            expand.setTitle("Rooooooohyyyyy joooonnnnnn");
+            card.addCardExpand(expand);
+            card.setOnClickListener(new Card.OnCardClickListener() {
+                @Override
+                public void onClick(Card card, View view) {
+                    card.doExpand();
+//                    card.setBackgroundColorResourceId(R.color.lightBlue);
+//                    view.setBackgroundResource(R.color.lightBlue);
+                }
+            });
+            card.setOnSwipeListener(new Card.OnSwipeListener() {
+                @Override
+                public void onSwipe(Card card) {
+                    Log.e("harrrrrr","roohy swiped this or that ... whatever...");
+                    MainActivity.this.overridePendingTransition(R.anim.abc_fade_in,R.anim.left2right);
+                }
+            });
+            card.setOnExpandAnimatorStartListener(new Card.OnExpandAnimatorStartListener() {
+                @Override
+                public void onExpandStart(Card card) {
+                    Log.e("fapfappp","fafffffffffff");
+                }
+            });
             /*CardThumbnail thumb = new CardThumbnail(this);
             thumb.setDrawableResource(listImages[i]);
             card.addCardThumbnail(thumb);*/

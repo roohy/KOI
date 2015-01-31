@@ -24,7 +24,7 @@ public class autoCompleteHandler {
     private static final String TYPE_AUTOCOMPLETE = "/autocomplete";
     private static final String OUT_JSON = "/json";
 
-    private static final String API_KEY = "AIzaSyB0tVHtjy5DpdPCMzxCjb0znL1P2REFHjQ";
+    private static final String API_KEY = "AIzaSyC6U7uDpYQDoZOkLIwYD9juDcJSFS60xZM";
 
     public static ArrayList<String> autocomplete(String input) {
         Log.e("Ehsan"," input is "+input);
