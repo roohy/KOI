@@ -1,5 +1,9 @@
 package org.musk.koi.koi;
 
+import android.content.Context;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationManager;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -37,7 +41,16 @@ public class autoCompleteHandler {
             sb.append("&components=country:us");
             sb.append("&input=" + URLEncoder.encode(input, "utf8"));
 
-            URL url = new URL(sb.toString());
+
+//            LocationManager  lm = (LocationManager)(new MainActivity()).getSystemService(Context.LOCATION_SERVICE);
+           URL url = new URL(sb.toString());
+//            Criteria criteria = new Criteria(); criteria.setAccuracy(Criteria.ACCURACY_FINE);
+//            criteria.setCostAllowed(false);
+//            String providerName = lm.getBestProvider(criteria, true);
+//            Location loc = lm.getLastKnownLocation(providerName);
+
+
+            url = new URL("http://koi.cloudapp.net/api/Authentication/GetPlacesFromGoogle?query="+URLEncoder.encode( input)+"&location=33.974415,-118.422573");
             conn = (HttpURLConnection) url.openConnection();
             InputStreamReader in = new InputStreamReader(conn.getInputStream());
 
