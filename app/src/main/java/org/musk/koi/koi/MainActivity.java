@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.LocationManager;
 import android.support.v7.app.ActionBarActivity;
@@ -13,6 +15,8 @@ import android.support.v4.app.FragmentManager;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Base64;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -24,6 +28,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.facebook.HttpMethod;
 import com.facebook.Request;
 import com.facebook.Response;
 import com.facebook.Session;
@@ -36,11 +41,16 @@ import com.facebook.SessionLoginBehavior;
 import com.facebook.SessionState;
 import com.facebook.UiLifecycleHelper;
 import com.facebook.model.GraphUser;
-import com.facebook.samples.friendpicker.PickFriendsActivity;
+import com.facebook.widget.LoginButton;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.Signature;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+
 
 public class MainActivity extends ActionBarActivity
         implements NavigationDrawerFragment.NavigationDrawerCallbacks {
@@ -48,9 +58,11 @@ public class MainActivity extends ActionBarActivity
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
      */
+
+
+
     private MainFragment mainFragment;
     private NavigationDrawerFragment mNavigationDrawerFragment;
-    Session.StatusCallback fbStatusCallback;
 
     /**
      * Used to store the last screen title. For use in {@link #restoreActionBar()}.
@@ -65,6 +77,7 @@ public class MainActivity extends ActionBarActivity
     String get_id, get_name, get_gender, get_email, get_birthday, get_locale, get_location;
     String s = new String("");
     Bundle savedInstanceState;
+
     private static final List<String> PERMISSIONS = new ArrayList<String>() {
         {
             add("user_friends");
@@ -91,7 +104,7 @@ public class MainActivity extends ActionBarActivity
 
     public void myButtonClick(View v){
         Session activeSession = Session.getActiveSession();
-
+//        activeSession = Session.openActiveSessionFromCache(mainFragment.getActivity());
 
 
         TextView text1 = (TextView) findViewById(R.id.textView);
@@ -106,32 +119,77 @@ public class MainActivity extends ActionBarActivity
 
         //Button b = (Button)v;
 
-        if(activeSession==null){
-            // try to restore from cache
-            activeSession = Session.openActiveSessionFromCache(mainFragment.getActivity());
-        }
+//        if(activeSession==null){
+//            // try to restore from cache
+//            activeSession = Session.openActiveSessionFromCache(mainFragment.getActivity());
+//        }
 
-        if(activeSession == null)
+        if(activeSession == null) {
             text1.setText("null");
-        else {
-            Request.newMyFriendsRequest(activeSession,
-                    new Request.GraphUserListCallback() {
-                        @Override
-                        public void onCompleted(List<GraphUser> users,
-                                                Response response) {
-                            if(users != null) {
-                                s = " haha ";
-                                for (GraphUser user : users) {
-//                                    if (user != null)
+            try {
+                PackageInfo info = getPackageManager().getPackageInfo(
+                        "org.musk.koi.koi",
+                        PackageManager.GET_SIGNATURES);
+                for (android.content.pm.Signature signature : info.signatures) {
+                    MessageDigest md = MessageDigest.getInstance("SHA");
+                    md.update(signature.toByteArray());
+                    Log.d("KeyHash:", Base64.encodeToString(md.digest(), Base64.DEFAULT));
+                }
+            } catch (PackageManager.NameNotFoundException e) {
+                e.printStackTrace();
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            }
+        }else {
 
-                                }
-                            }
-                            if(response != null){
+//            Session.NewPermissionsRequest newPermissionsRequest = new Session
+//                    .NewPermissionsRequest(this, Arrays.asList("user_checkins"));
+//            activeSession.requestNewReadPermissions(newPermissionsRequest);
+
+
+//            Request.newMyFriendsRequest(activeSession,
+//                    new Request.GraphUserListCallback() {
+//                        @Override
+//                        public void onCompleted(List<GraphUser> users,
+//                                                Response response) {
+//                            if(users != null) {
 //                                s = " haha ";
-                                s = response.toString();
-                            }
+//                                for (GraphUser user : users) {
+////                                    if (user != null)
+//
+//                                }
+//                            }
+//                            if(response != null){
+////                                s = " haha ";
+//                                s = response.toString();
+//                            }
+//                        }
+//                    }).executeAsync();
+            if(activeSession == null) {
+
+                activeSession = null;
+                Log.i("kossher", "active session is null");
+            }else if (!activeSession.isOpened() && !activeSession.isClosed()) {
+                activeSession.openForRead(new Session.OpenRequest(this).setPermissions(Arrays.asList("public_profile"))
+                        .setCallback(mainFragment.statusCallback));;
+                Log.i("kossher", "opened it!");
+            } else {
+                Session.openActiveSession(this, mainFragment, true, mainFragment.statusCallback);
+                Log.i("kossher", "opened it 2");
+            }
+
+            new Request(
+                    activeSession,
+                    "/me",
+                    null,
+                    HttpMethod.GET,
+                    new Request.Callback() {
+                        public void onCompleted(Response response) {
+                            /* handle the result */
+                            Log.e("kossher", response.toString());
                         }
-                    }).executeAsync();
+                    }
+            ).executeAsync();
 
 
 ////            if(activeSession.getState().isOpened()) {
@@ -150,10 +208,24 @@ public class MainActivity extends ActionBarActivity
 //                friendRequest.executeAsync();
 
 //            }
-            text1.setText("majid "+s);
+
+            if(activeSession.getPermissions() == null)
+                text1.setText("permissions null");
+            else{
+                for(String ss:activeSession.getPermissions())
+                    Log.e("kossher", ss);
+                Log.e("kossher", ((Boolean)activeSession.isOpened()).toString() + " " + ((Boolean)activeSession.isClosed()).toString());
+                text1.setText("majid "+s);
+            }
         }
     }
     //------------------------------------
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Session.getActiveSession().onActivityResult(this, requestCode, resultCode, data);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -181,6 +253,9 @@ public class MainActivity extends ActionBarActivity
         mNavigationDrawerFragment.setUp(
                 R.id.navigation_drawer,
                 (DrawerLayout) findViewById(R.id.drawer_layout));
+
+
+//        authButton.setReadPermissions(Arrays.asList("public_profile"));
     }
 
     @Override
