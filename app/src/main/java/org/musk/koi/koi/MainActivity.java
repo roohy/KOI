@@ -15,8 +15,23 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
+import android.view.animation.OvershootInterpolator;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
+
+
+import it.gmariotti.cardslib.library.internal.Card;
+import it.gmariotti.cardslib.library.internal.CardArrayAdapter;
+import it.gmariotti.cardslib.library.internal.CardHeader;
+import it.gmariotti.cardslib.library.internal.CardThumbnail;
+import it.gmariotti.cardslib.library.view.CardListView;
+import it.sephiroth.android.library.floatingmenu.FloatingActionItem;
+import it.sephiroth.android.library.floatingmenu.FloatingActionMenu;
+
+import java.util.ArrayList;
+
+import android.app.Activity;
+import android.os.Bundle;
 
 
 public class MainActivity extends ActionBarActivity
@@ -45,6 +60,63 @@ public class MainActivity extends ActionBarActivity
         mNavigationDrawerFragment.setUp(
                 R.id.navigation_drawer,
                 (DrawerLayout) findViewById(R.id.drawer_layout));
+
+        CardListView container= (CardListView) findViewById(R.id.myList);
+
+
+        ArrayList<Card> cards = new ArrayList<Card>();
+
+
+
+        for (int i = 1; i<20; i++) {
+            // Create a Card
+            Card card = new Card(this);
+            // Create a CardHeader
+            CardHeader header = new CardHeader(this);
+            // Add Header to card
+            header.setTitle("Angry bird: " + i);
+            card.setTitle("sample title");
+            card.addCardHeader(header);
+
+            /*CardThumbnail thumb = new CardThumbnail(this);
+            thumb.setDrawableResource(listImages[i]);
+            card.addCardThumbnail(thumb);*/
+
+            cards.add(card);
+        }
+
+        CardArrayAdapter mCardArrayAdapter = new CardArrayAdapter(this, cards);
+
+
+        CardListView listView = (CardListView) this.findViewById(R.id.myList);
+        if (listView != null) {
+            listView.setAdapter(mCardArrayAdapter);
+        }
+
+        FloatingActionItem item1 = new FloatingActionItem.Builder(0)
+                .withResId(R.drawable.ic_action_add)
+                .withDelay(0)
+                //.withPadding(action_item_padding)
+                .build();
+
+
+        FloatingActionMenu mFloatingMenu = new FloatingActionMenu
+                .Builder(this)
+                .addItem(item1)
+                .withScrollDelegate(new FloatingActionMenu.AbsListViewScrollDelegate(listView))
+                //.withThreshold(R.dimen.float_action_threshold)
+                //.withGap(R.dimen.float_action_item_gap)
+                //.withHorizontalPadding(R.dimen.float_action_h_padding)
+                //.withVerticalPadding(R.dimen.float_action_v_padding)
+                .withGravity(FloatingActionMenu.Gravity.CENTER_HORIZONTAL | FloatingActionMenu.Gravity.BOTTOM)
+                .withDirection(FloatingActionMenu.Direction.Vertical)
+                .animationDuration(300)
+                .animationInterpolator(new OvershootInterpolator())
+                .visible(true)
+                .build();
+
+        //mFloatingMenu.setOnItemClickListener(this);
+
     }
 
     @Override
