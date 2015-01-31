@@ -17,15 +17,18 @@
         <EditText
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:hint="Notes..."/>
+            android:hint="Notes..."
+            android:id="@+id/noteText"/>
         <DatePicker
             android:layout_width="match_parent"
             android:layout_height="100dp"
-            android:calendarViewShown="false"> </DatePicker>
+            android:calendarViewShown="false"
+            android:id="@+id/dateInput"> </DatePicker>
 
         <TimePicker
             android:layout_width="match_parent"
-            android:layout_height="100dp"> </TimePicker>
+            android:layout_height="100dp"
+            android:id="@+id/timeInput"> </TimePicker>
 
         <AutoCompleteTextView
             android:layout_width="match_parent"
@@ -34,7 +37,8 @@
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/inputButton"/>
+            android:id="@+id/inputButton"
+            android:text="Add Reminder"/>
         </LinearLayout>
 
 </ScrollView>
