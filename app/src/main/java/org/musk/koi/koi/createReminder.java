@@ -10,6 +10,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Filter;
 import android.widget.Filterable;
@@ -33,6 +34,14 @@ public class createReminder extends ActionBarActivity {
                 String str = (String) parent.getItemAtPosition(position);
 
                 //Toast.makeText(, str, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        Button btn = (Button)this.findViewById(R.id.inputButton);
+        btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
             }
         });
 
@@ -121,4 +130,7 @@ class PlacesAutoCompleteAdapter extends ArrayAdapter<String> implements Filterab
             }};
         return filter;
     }
+
+
+
 }
