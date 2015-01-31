@@ -51,4 +51,6 @@ repositories {
 
 dependencies {
     compile 'it.sephiroth.android.library.floatingmenu:floatingmenu:1.0.0' // see changelog
+    compile 'com.facebook.android:facebook-android-sdk:3.21.1'
 }
+

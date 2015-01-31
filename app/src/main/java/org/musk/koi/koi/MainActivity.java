@@ -63,6 +63,8 @@ public class MainActivity extends ActionBarActivity
                 R.id.navigation_drawer,
                 (DrawerLayout) findViewById(R.id.drawer_layout));
 
+
+
         CardListView container= (CardListView) findViewById(R.id.myList);
 
 
