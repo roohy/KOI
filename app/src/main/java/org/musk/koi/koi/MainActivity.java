@@ -1,6 +1,11 @@
 package org.musk.koi.koi;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.location.Criteria;
+import android.location.LocationManager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
@@ -16,8 +21,26 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.TextView;
 
+import com.facebook.Request;
+import com.facebook.Response;
+import com.facebook.Session;
+
+import com.facebook.AppEventsLogger;
+import com.facebook.Session;
+import com.facebook.Session.NewPermissionsRequest;
+import com.facebook.SessionDefaultAudience;
+import com.facebook.SessionLoginBehavior;
+import com.facebook.SessionState;
+import com.facebook.UiLifecycleHelper;
+import com.facebook.model.GraphUser;
+import com.facebook.samples.friendpicker.PickFriendsActivity;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends ActionBarActivity
         implements NavigationDrawerFragment.NavigationDrawerCallbacks {
@@ -25,16 +48,129 @@ public class MainActivity extends ActionBarActivity
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
      */
+    private MainFragment mainFragment;
     private NavigationDrawerFragment mNavigationDrawerFragment;
+    Session.StatusCallback fbStatusCallback;
 
     /**
      * Used to store the last screen title. For use in {@link #restoreActionBar()}.
      */
     private CharSequence mTitle;
 
+    private static final int PICK_FRIENDS_ACTIVITY = 1;
+    private Button pickFriendsButton;
+    private TextView resultsTextView;
+    private UiLifecycleHelper lifecycleHelper;
+    boolean pickFriendsWhenSessionOpened;
+    String get_id, get_name, get_gender, get_email, get_birthday, get_locale, get_location;
+    String s = new String("");
+    Bundle savedInstanceState;
+    private static final List<String> PERMISSIONS = new ArrayList<String>() {
+        {
+            add("user_friends");
+            add("public_profile");
+        }
+    };
+
+    //Majid
+
+
+
+
+    private boolean sessionHasNecessaryPerms(Session session) {
+        if (session != null && session.getPermissions() != null) {
+            for (String requestedPerm : PERMISSIONS) {
+                if (!session.getPermissions().contains(requestedPerm)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public void myButtonClick(View v){
+        Session activeSession = Session.getActiveSession();
+
+
+
+        TextView text1 = (TextView) findViewById(R.id.textView);
+
+        LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+
+
+        Criteria criteria = new Criteria(); criteria.setAccuracy(Criteria.ACCURACY_FINE);
+        criteria.setCostAllowed(false);
+        String providerName = lm.getBestProvider(criteria, true);
+        //Location loc = lm.getLastKnownLocation(providerName);
+
+        //Button b = (Button)v;
+
+        if(activeSession==null){
+            // try to restore from cache
+            activeSession = Session.openActiveSessionFromCache(mainFragment.getActivity());
+        }
+
+        if(activeSession == null)
+            text1.setText("null");
+        else {
+            Request.newMyFriendsRequest(activeSession,
+                    new Request.GraphUserListCallback() {
+                        @Override
+                        public void onCompleted(List<GraphUser> users,
+                                                Response response) {
+                            if(users != null) {
+                                s = " haha ";
+                                for (GraphUser user : users) {
+//                                    if (user != null)
+
+                                }
+                            }
+                            if(response != null){
+//                                s = " haha ";
+                                s = response.toString();
+                            }
+                        }
+                    }).executeAsync();
+
+
+////            if(activeSession.getState().isOpened()) {
+//                Request friendRequest = Request.newMyFriendsRequest(activeSession,
+//                        new Request.GraphUserListCallback() {
+//                            @Override
+//                            public void onCompleted(List<GraphUser> users,
+//                                                    Response response) {
+//                                s = s + response.toString();
+//
+//                            }
+//                        });
+//                Bundle params = new Bundle();
+//                params.putString("fields", "id, name, picture");
+//                friendRequest.setParameters(params);
+//                friendRequest.executeAsync();
+
+//            }
+            text1.setText("majid "+s);
+        }
+    }
+    //------------------------------------
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        this.savedInstanceState = savedInstanceState;
+        if (savedInstanceState == null) {
+            // Add the fragment on initial activity setup
+            mainFragment = new MainFragment();
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .add(android.R.id.content, mainFragment)
+                    .commit();
+        } else {
+            // Or set the fragment from restored state info
+            mainFragment = (MainFragment) getSupportFragmentManager()
+                    .findFragmentById(android.R.id.content);
+        }
+
         setContentView(R.layout.activity_main);
 
         mNavigationDrawerFragment = (NavigationDrawerFragment)
