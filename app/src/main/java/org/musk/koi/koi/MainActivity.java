@@ -1,6 +1,7 @@
 package org.musk.koi.koi;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.widget.Toast;
 
 
 public class MainActivity extends ActionBarActivity
@@ -115,8 +117,20 @@ public class MainActivity extends ActionBarActivity
                 .visible(true)
                 .build();
 
-        //mFloatingMenu.setOnItemClickListener(this);
+        mFloatingMenu.setOnItemClickListener(new FloatingActionMenu.OnItemClickListener() {
+            @Override
+            public void onItemClick(FloatingActionMenu floatingActionMenu, int i) {
+//                Toast.makeText(MainActivity.this,"ahahahahaha",Toast.LENGTH_LONG).show();
+                MainActivity.this.newItemActivity();
+            }
+        });
 
+
+    }
+
+    public void newItemActivity(){
+        Intent intent = new Intent(this,createReminder.class);
+        startActivity(intent);
     }
 
     @Override
