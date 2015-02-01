@@ -344,7 +344,7 @@ public class MainActivity extends ActionBarActivity
 
                     JSONObject jObject = jArray.getJSONObject(i);
                     String name = jObject.getString("Title");
-                    String tab1_text = jObject.getString("Note");
+                    String note = jObject.getString("Note");
 //                    int active = jObject.getInt("active");
 
                     Card card = new Card(MainActivity.this);
@@ -352,7 +352,7 @@ public class MainActivity extends ActionBarActivity
                     CardHeader header = new CardHeader(MainActivity.this);
                     // Add Header to card
                     header.setTitle(name);
-                    card.setTitle("sample title");
+                    card.setTitle(note);
                     card.addCardHeader(header);
                     CardExpand expand = new CardExpand(MainActivity.this.getBaseContext());
 //                    expand.setTitle("Rooooooohyyyyy joooonnnnnn");
@@ -360,11 +360,15 @@ public class MainActivity extends ActionBarActivity
                     card.setOnClickListener(new Card.OnCardClickListener() {
                         @Override
                         public void onClick(Card card, View view) {
+                            if(card.isExpanded()){
+                                card.doToogleExpand();
+                            }
                             card.doExpand();
 //                    card.setBackgroundColorResourceId(R.color.lightBlue);
 //                    view.setBackgroundResource(R.color.lightBlue);
                         }
                     });
+
                     card.setOnSwipeListener(new Card.OnSwipeListener() {
                         @Override
                         public void onSwipe(Card card) {

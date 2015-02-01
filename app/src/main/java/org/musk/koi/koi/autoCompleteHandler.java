@@ -89,7 +89,7 @@ public class autoCompleteHandler {
             Log.e(LOG_TAG, "Cannot process JSON results", e);
         }
 
-        Log.e("Rooohy","after getting everything in try part, auto comlplete fucktard "+resultList.size());
+        Log.e("Rooohy","after getting everything in try part, auto comlplete  "+resultList.size());
         return resultList;
     }
 }

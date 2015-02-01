@@ -147,12 +147,12 @@ public class createReminder extends ActionBarActivity {
             AutoCompleteTextView placeInput = (AutoCompleteTextView)createReminder.this.findViewById(R.id.placeInput);
 
             Log.e("Create Reminder","I am here second part of do in background");
-            String url_select = "http://koi.cloudapp.net/api/Authentication/AddReminder?userid=1&title="
+            String url_select = "http://koi.cloudapp.net/api/Authentication/AddReminder?userID=1&title="
                     + URLEncoder.encode(titleText.getText().toString())+"&note="
-                    +URLEncoder.encode(noteText.getText().toString())+"&date="
-                    +URLEncoder.encode(dateInput.getDayOfMonth()+"-"+dateInput.getDayOfMonth()+"-"+dateInput.getYear())+"&time="
-                    +URLEncoder.encode(timeInput.getCurrentHour()+":"+timeInput.getCurrentMinute())+"&location="
-                    +URLEncoder.encode(placeInput.getText().toString());
+                    +URLEncoder.encode(noteText.getText().toString())//+"&date="
+                    //+URLEncoder.encode("2015-01-31 16:20:30")//dateInput.getMonth()+"-"+dateInput.getDayOfMonth()+"-"+dateInput.getYear())//+"&time="+URLEncoder.encode(timeInput.getCurrentHour()+":"+timeInput.getCurrentMinute())
+                    +"&location="
+                    +URLEncoder.encode(placeInput.getText().toString())+"&distanceThreshold=4&";
 
             ArrayList<NameValuePair> param = new ArrayList<NameValuePair>();
 
@@ -206,16 +206,12 @@ public class createReminder extends ActionBarActivity {
             //parse JSON data
             try {
 //                Log.e("roohy","hahahahah");
-                ArrayList<Card> cards = new ArrayList<Card>();
-                JSONArray jArray = new JSONArray(result);
-                for(int i=0; i < jArray.length(); i++) {
+                Toast.makeText(createReminder.this,"it was "+result.toString(),Toast.LENGTH_LONG).show();
+                JSONObject jObject = new JSONObject(result);
+                    //String name = jObject.getString("OK");
 
-
-                    JSONObject jObject = jArray.getJSONObject(i);
-                    String name = jObject.getString("Title");
-                    String tab1_text = jObject.getString("Note");
 //                    int active = jObject.getInt("active");
-                } // End Loop
+                 // End Loop
 
 
                 this.progressDialog.dismiss();

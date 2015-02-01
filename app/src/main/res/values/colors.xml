@@ -2,4 +2,5 @@
 
 <resources>
     <color name="lightBlue">#88220080</color>
+    <color name="action_bar">#BA0000</color>
 </resources>
