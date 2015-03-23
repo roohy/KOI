@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
@@ -12,6 +14,7 @@ import android.support.v4.app.FragmentManager;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -39,7 +42,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.List;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -60,6 +66,20 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import com.facebook.HttpMethod;
+import com.facebook.Request;
+import com.facebook.Response;
+import com.facebook.Session;
+
+import com.facebook.AppEventsLogger;
+import com.facebook.Session;
+import com.facebook.Session.NewPermissionsRequest;
+import com.facebook.SessionDefaultAudience;
+import com.facebook.SessionLoginBehavior;
+import com.facebook.SessionState;
+import com.facebook.UiLifecycleHelper;
+import com.facebook.model.GraphUser;
+import com.facebook.widget.LoginButton;
 
 
 public class MainActivity extends ActionBarActivity
@@ -71,6 +91,7 @@ public class MainActivity extends ActionBarActivity
     private NavigationDrawerFragment mNavigationDrawerFragment;
 
     private MainFragment mainFragment;
+    private Session activeSession = null;
     /**
      * Used to store the last screen title. For use in {@link #restoreActionBar()}.
      */
@@ -81,13 +102,27 @@ public class MainActivity extends ActionBarActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //String accessToken = "CAAEoqDa2RKABAJBlI5HCNzZAlsci0NAEAe0gmksLbyro076j1nZBPxTjZBjia1Qp0JjNdyzs13sxm5VWth9B6nF6u0pESo32RbsSb2TNgmWiilo29azWsJZAZCyX1KjMDQVaaZCXLqtLF1IaLXPM0fGhPtDTiTA377MI4vsGxT2g0ZAaT08GpbUNOkjIc75jE7ImUqJDMjTwQrTfMJmzC9r";
+        //Session.restoreSession(null,)
+        //----------- majid
+        if (savedInstanceState == null) {
+            // Add the fragment on initial activity setup
+            mainFragment = new MainFragment();
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .add(android.R.id.content, mainFragment)
+                    .commit();
+        } else {
+            // Or set the fragment from restored state info
+            mainFragment = (MainFragment) getSupportFragmentManager()
+                    .findFragmentById(android.R.id.content);
+        }
+        //---------------------------
         setContentView(R.layout.activity_main);
 
         mNavigationDrawerFragment = (NavigationDrawerFragment)
                 getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
         mTitle = getTitle();
-
-
 
         // Set up the drawer.
         mNavigationDrawerFragment.setUp(
@@ -142,9 +177,6 @@ public class MainActivity extends ActionBarActivity
 
             cards.add(card);
         }*/
-
-
-
     }
 
     public void newItemActivity(){
@@ -251,15 +283,84 @@ public class MainActivity extends ActionBarActivity
         }
     }
 
-/*
-    private void onSessionStateChange(Session session, SessionState state, Exception exception) {
-        if (state.isOpened()) {
-            Log.i("FACEBOOK", "Logged in...");
-        } else if (state.isClosed()) {
-            Log.i("FACEBOOK", "Logged out...");
+    public void myButtonClick(View v){
+        Log.i("kossher", "button clicked!!");
+        activeSession = Session.getActiveSession();
+//        activeSession = Session.openActiveSessionFromCache(mainFragment.getActivity());
+
+
+        //--------------------- Location -------------------------
+//        LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+
+
+//        Criteria criteria = new Criteria();
+//        criteria.setAccuracy(Criteria.ACCURACY_MEDIUM);
+//        criteria.setCostAllowed(true);
+//        String providerName = lm.getBestProvider(criteria, false);
+//        Log.d("kossher", providerName);
+        //Location loc = lm.getLastKnownLocation(providerName);
+        //-----------------------------------------------------------------
+        if(activeSession == null) {
+            try {
+                PackageInfo info = getPackageManager().getPackageInfo(
+                        "org.musk.koi.koi",
+                        PackageManager.GET_SIGNATURES);
+                for (android.content.pm.Signature signature : info.signatures) {
+                    MessageDigest md = MessageDigest.getInstance("SHA");
+                    md.update(signature.toByteArray());
+                    Log.d("KeyHash:", Base64.encodeToString(md.digest(), Base64.DEFAULT));
+                }
+            } catch (PackageManager.NameNotFoundException e) {
+                e.printStackTrace();
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            }
+        }else {
+            Request friendRequest = Request.newMyFriendsRequest(activeSession,
+                    new Request.GraphUserListCallback(){
+                        @Override
+                        public void onCompleted(List<GraphUser> users,
+                                                Response response) {
+                            Log.i("kossher", users.size()+" " + response.toString());
+                            for(GraphUser gu:users){
+                                Log.i("kossher", gu.getId() + " " + gu.getName());  //show friends' info
+                            }
+
+                        }
+                    }
+            );
+            Request.executeMeRequestAsync(activeSession,
+                    new Request.GraphUserCallback(){
+                        @Override
+                        public void onCompleted(GraphUser user, Response response) {
+                            String responseString = response.toString();
+                            int i = responseString.indexOf("email");
+                            responseString = responseString.substring(i);
+                            i = responseString.indexOf(":");
+                            responseString = responseString.substring(i+2);
+                            i = responseString.indexOf("\"");
+                            responseString = responseString.substring(0,i);
+
+                            Log.i("kossher",responseString); // gives user information. user.getId()
+                        }
+                    }
+            );
+            Log.i("kossher access token",activeSession.getAccessToken());
+            friendRequest.executeAsync();
         }
     }
-*/
+
+
+    private void onSessionStateChange(Session session, SessionState state, Exception exception) {
+        if (session == activeSession){
+            if (state.isOpened()) {
+                Log.i("FACEBOOK", "Logged in...");
+            } else if (state.isClosed()) {
+                Log.i("FACEBOOK", "Logged out...");
+            }
+        }
+    }
+
 
 
     class MyAsyncTask extends AsyncTask<String, String, Void> {
@@ -334,59 +435,60 @@ public class MainActivity extends ActionBarActivity
 
 
         protected void onPostExecute(Void v) {
+            ArrayList<Card> cards = new ArrayList<Card>();
             //parse JSON data
-            try {
-//                Log.e("roohy","hahahahah");
-                ArrayList<Card> cards = new ArrayList<Card>();
-                JSONArray jArray = new JSONArray(result);
-                for(int i=0; i < jArray.length(); i++) {
-
-
-                    JSONObject jObject = jArray.getJSONObject(i);
-                    String name = jObject.getString("Title");
-                    String note = jObject.getString("Note");
-//                    int active = jObject.getInt("active");
-
-                    Card card = new Card(MainActivity.this);
-                    // Create a CardHeader
-                    CardHeader header = new CardHeader(MainActivity.this);
-                    // Add Header to card
-                    header.setTitle(name);
-                    card.setTitle(note);
-                    card.addCardHeader(header);
-                    CardExpand expand = new CardExpand(MainActivity.this.getBaseContext());
-//                    expand.setTitle("Rooooooohyyyyy joooonnnnnn");
-                    card.addCardExpand(expand);
-                    card.setOnClickListener(new Card.OnCardClickListener() {
-                        @Override
-                        public void onClick(Card card, View view) {
-                            if(card.isExpanded()){
-                                card.doToogleExpand();
-                            }
-                            card.doExpand();
-//                    card.setBackgroundColorResourceId(R.color.lightBlue);
-//                    view.setBackgroundResource(R.color.lightBlue);
-                        }
-                    });
-
-                    card.setOnSwipeListener(new Card.OnSwipeListener() {
-                        @Override
-                        public void onSwipe(Card card) {
-//                            Log.e("harrrrrr","roohy swiped this or that ... whatever...");
-                            MainActivity.this.overridePendingTransition(R.anim.abc_fade_in,R.anim.left2right);
-                        }
-                    });
-            /*CardThumbnail thumb = new CardThumbnail(this);
-            thumb.setDrawableResource(listImages[i]);
-            card.addCardThumbnail(thumb);*/
-
-                    cards.add(card);
-
-
-
-//                    Toast.makeText(MainActivity.this,"title is "+name,Toast.LENGTH_LONG).show();
-
-                } // End Loop
+//            try {
+////                Log.e("roohy","hahahahah");
+//                ArrayList<Card> cards = new ArrayList<Card>();
+//                JSONArray jArray = new JSONArray(result);
+//                for(int i=0; i < jArray.length(); i++) {
+//
+//
+//                    JSONObject jObject = jArray.getJSONObject(i);
+//                    String name = jObject.getString("Title");
+//                    String note = jObject.getString("Note");
+////                    int active = jObject.getInt("active");
+//
+//                    Card card = new Card(MainActivity.this);
+//                    // Create a CardHeader
+//                    CardHeader header = new CardHeader(MainActivity.this);
+//                    // Add Header to card
+//                    header.setTitle(name);
+//                    card.setTitle(note);
+//                    card.addCardHeader(header);
+//                    CardExpand expand = new CardExpand(MainActivity.this.getBaseContext());
+////                    expand.setTitle("Rooooooohyyyyy joooonnnnnn");
+//                    card.addCardExpand(expand);
+//                    card.setOnClickListener(new Card.OnCardClickListener() {
+//                        @Override
+//                        public void onClick(Card card, View view) {
+//                            if(card.isExpanded()){
+//                                card.doToogleExpand();
+//                            }
+//                            card.doExpand();
+////                    card.setBackgroundColorResourceId(R.color.lightBlue);
+////                    view.setBackgroundResource(R.color.lightBlue);
+//                        }
+//                    });
+//
+//                    card.setOnSwipeListener(new Card.OnSwipeListener() {
+//                        @Override
+//                        public void onSwipe(Card card) {
+////                            Log.e("harrrrrr","roohy swiped this or that ... whatever...");
+//                            MainActivity.this.overridePendingTransition(R.anim.abc_fade_in,R.anim.left2right);
+//                        }
+//                    });
+//            /*CardThumbnail thumb = new CardThumbnail(this);
+//            thumb.setDrawableResource(listImages[i]);
+//            card.addCardThumbnail(thumb);*/
+//
+//                    cards.add(card);
+//
+//
+//
+////                    Toast.makeText(MainActivity.this,"title is "+name,Toast.LENGTH_LONG).show();
+//
+//                } // End Loop
 
 
                 CardArrayAdapter mCardArrayAdapter = new CardArrayAdapter(MainActivity.this, cards);
@@ -436,9 +538,9 @@ public class MainActivity extends ActionBarActivity
 
 
                 this.progressDialog.dismiss();
-            } catch (JSONException e) {
-                Log.e("JSONException", "Error: " + e.toString());
-            } // catch (JSONException e)
+//            } catch (JSONException e) {
+//                Log.e("JSONException", "Error: " + e.toString());
+//            } // catch (JSONException e)
         }
     }
 

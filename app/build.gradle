@@ -22,6 +22,7 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:appcompat-v7:21.0.3'
+	compile 'com.facebook.android:facebook-android-sdk:3.21.1'
 }
 
 dependencies {
@@ -51,6 +52,6 @@ repositories {
 
 dependencies {
     compile 'it.sephiroth.android.library.floatingmenu:floatingmenu:1.0.0' // see changelog
-    compile 'com.facebook.android:facebook-android-sdk:3.21.1'
+    
 }
 
