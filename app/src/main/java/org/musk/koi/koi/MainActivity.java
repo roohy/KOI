@@ -1,11 +1,14 @@
 package org.musk.koi.koi;
 
+
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
@@ -14,6 +17,8 @@ import android.support.v4.app.FragmentManager;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Html;
+import android.text.Spanned;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
@@ -24,7 +29,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
 import android.view.animation.OvershootInterpolator;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.TextView;
 
 
@@ -38,14 +45,17 @@ import it.sephiroth.android.library.floatingmenu.FloatingActionItem;
 import it.sephiroth.android.library.floatingmenu.FloatingActionMenu;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -81,14 +91,44 @@ import com.facebook.UiLifecycleHelper;
 import com.facebook.model.GraphUser;
 import com.facebook.widget.LoginButton;
 
+import android.support.v4.app.FragmentActivity;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.drive.Drive;
+import com.google.android.gms.location.places.AutocompleteFilter;
+import com.google.android.gms.location.places.AutocompletePredictionBuffer;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.PlaceBuffer;
+import com.google.android.gms.location.places.Places;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+
+
 
 public class MainActivity extends ActionBarActivity
-        implements NavigationDrawerFragment.NavigationDrawerCallbacks {
+        implements GoogleApiClient.ConnectionCallbacks,GoogleApiClient.OnConnectionFailedListener, NavigationDrawerFragment.NavigationDrawerCallbacks {
 
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
      */
     private NavigationDrawerFragment mNavigationDrawerFragment;
+    private GoogleApiClient mGoogleApiClient;
+    private boolean mResolvingError = false;
+    private PlaceAutocompleteAdapter mAdapter;
+    private AutoCompleteTextView mAutocompleteView;
+    private TextView mPlaceDetailsText;
+
+
+
 
     private MainFragment mainFragment;
     private Session activeSession = null;
@@ -117,7 +157,35 @@ public class MainActivity extends ActionBarActivity
             mainFragment = (MainFragment) getSupportFragmentManager()
                     .findFragmentById(android.R.id.content);
         }
+        try {
+            LatLngBounds BOUNDS_GREATER_SYDNEY = new LatLngBounds(
+                    new LatLng(-34.041458, 150.790100), new LatLng(-33.682247, 151.383362));
+            mAdapter = new PlaceAutocompleteAdapter(this, android.R.layout.simple_list_item_1,
+                    BOUNDS_GREATER_SYDNEY, null);
+
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addApi(Places.GEO_DATA_API)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .build();
+            mGoogleApiClient.connect();
+
+            mAutocompleteView = (AutoCompleteTextView)
+                    findViewById(R.id.autocompplaces);
+            mPlaceDetailsText = (TextView) findViewById(R.id.placedetails);
+            mAutocompleteView.setAdapter(mAdapter);
+            mAutocompleteView.setOnItemClickListener(mAutocompleteClickListener);
+
+
+        }catch(Exception e){
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PrintStream ps = new PrintStream(baos);
+            e.printStackTrace(ps);
+            String content = baos.toString();
+            Log.d("kossher map",content);
+        }
         //---------------------------
+
         setContentView(R.layout.activity_main);
 
         mNavigationDrawerFragment = (NavigationDrawerFragment)
@@ -243,6 +311,32 @@ public class MainActivity extends ActionBarActivity
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onConnected(Bundle bundle) {
+        mAdapter.setGoogleApiClient(mGoogleApiClient);
+        Log.d("kossher map", "GoogleApiClient connected.");
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        mAdapter.setGoogleApiClient(null);
+        Log.d("kossher map", "GoogleApiClient connection suspended.");
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        Log.e("kossher map", "onConnectionFailed: ConnectionResult.getErrorCode() = "
+                + connectionResult.getErrorCode());
+
+        // TODO(Developer): Check error code and notify the user of error state and resolution.
+        Toast.makeText(this,
+                "Could not connect to Google API Client: Error " + connectionResult.getErrorCode(),
+                Toast.LENGTH_SHORT).show();
+
+        // Disable API access in the adapter because the client was not initialised correctly.
+        mAdapter.setGoogleApiClient(null);
+    }
+
     /**
      * A placeholder fragment containing a simple view.
      */
@@ -283,8 +377,115 @@ public class MainActivity extends ActionBarActivity
         }
     }
 
+    /**
+     * Listener that handles selections from suggestions from the AutoCompleteTextView that
+     * displays Place suggestions.
+     * Gets the place id of the selected item and issues a request to the Places Geo Data API
+     * to retrieve more details about the place.
+     *
+     * @see com.google.android.gms.location.places.GeoDataApi#getPlaceById(com.google.android.gms.common.api.GoogleApiClient,
+     * String...)
+     */
+    private AdapterView.OnItemClickListener mAutocompleteClickListener
+            = new AdapterView.OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            /*
+             Retrieve the place ID of the selected item from the Adapter.
+             The adapter stores each Place suggestion in a PlaceAutocomplete object from which we
+             read the place ID.
+              */
+            final PlaceAutocompleteAdapter.PlaceAutocomplete item = mAdapter.getItem(position);
+            final String placeId = String.valueOf(item.placeId);
+            Log.i("kossher map", "Autocomplete item selected: " + item.description);
+
+            /*
+             Issue a request to the Places Geo Data API to retrieve a Place object with additional
+              details about the place.
+              */
+            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi
+                    .getPlaceById(mGoogleApiClient, placeId);
+            placeResult.setResultCallback(mUpdatePlaceDetailsCallback);
+
+            Toast.makeText(getApplicationContext(), "Clicked: " + item.description,
+                    Toast.LENGTH_SHORT).show();
+            Log.i("kossher map", "Called getPlaceById to get Place details for " + item.placeId);
+        }
+    };
+
+    /**
+     * Callback for results from a Places Geo Data API query that shows the first place result in
+     * the details view on screen.
+     */
+    private ResultCallback<PlaceBuffer> mUpdatePlaceDetailsCallback
+            = new ResultCallback<PlaceBuffer>() {
+        @Override
+        public void onResult(PlaceBuffer places) {
+            if (!places.getStatus().isSuccess()) {
+                // Request did not complete successfully
+                Log.e("kossher map", "Place query did not complete. Error: " + places.getStatus().toString());
+
+                return;
+            }
+            // Get the Place object from the buffer.
+            final Place place = places.get(0);
+
+            // Format details of the place for display and show it in a TextView.
+            mPlaceDetailsText.setText(formatPlaceDetails(getResources(), place.getName(),
+                    place.getId(), place.getAddress(), place.getPhoneNumber(),
+                    place.getWebsiteUri()) + "\nlat: "+ place.getLatLng().latitude + "\nlong: "+place.getLatLng().longitude);
+
+
+            Log.i("kossher map", "Place details received: " + place.getName());
+        }
+    };
+
+    private static Spanned formatPlaceDetails(Resources res, CharSequence name, String id,
+                                              CharSequence address, CharSequence phoneNumber, Uri websiteUri) {
+        Log.e("kossher map", res.getString(R.string.place_details, name, id, address, phoneNumber,
+                websiteUri));
+        return Html.fromHtml(res.getString(R.string.place_details, name, id, address, phoneNumber,
+                websiteUri));
+
+    }
+
     public void myButtonClick(View v){
         Log.i("kossher", "button clicked!!");
+        try {
+//            (SupportMapFragment)findViewById(R.id.mapFragment);
+
+//            SupportMapFragment ff = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.mapFragment));
+//            if(ff == null)
+//                Log.d("kossher map","ff NULLL!!!");
+//            GoogleMap myMap = ff.getMap();
+//            if(myMap == null)
+//                Log.d("kossher map","myMap NULLL!!!");
+//            myMap.setMyLocationEnabled(true);
+
+            ////////////////////////////////////////////////////////////////////////
+            mAutocompleteView = (AutoCompleteTextView)
+                    findViewById(R.id.autocompplaces);
+            mAutocompleteView.setAdapter(mAdapter);
+
+            mPlaceDetailsText = (TextView) findViewById(R.id.placedetails);
+            mAutocompleteView.setOnItemClickListener(mAutocompleteClickListener);
+            mAutocompleteView.callOnClick();
+
+
+            /////////////////////////////////////////////////////////////////////////
+
+
+            Log.d("kossher map","We passed the test!!!");
+
+        }catch(Exception e){
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PrintStream ps = new PrintStream(baos);
+            e.printStackTrace(ps);
+            String content = baos.toString();
+            Log.d("kossher map",content);
+        }
+//        Log.d("kossher map",mMap.getMyLocation().toString());
+//        map.getMapAsync(callback);
         activeSession = Session.getActiveSession();
 //        activeSession = Session.openActiveSessionFromCache(mainFragment.getActivity());
 
@@ -491,53 +692,55 @@ public class MainActivity extends ActionBarActivity
 //                } // End Loop
 
 
-                CardArrayAdapter mCardArrayAdapter = new CardArrayAdapter(MainActivity.this, cards);
+            CardArrayAdapter mCardArrayAdapter = new CardArrayAdapter(MainActivity.this, cards);
 
 
-                listView = (CardListView) MainActivity.this.findViewById(R.id.myList);
-                if (listView != null) {
-                    listView.setAdapter(mCardArrayAdapter);
-                }
-
-
-
-
-                FloatingActionItem item1 = new FloatingActionItem.Builder(0)
-                        .withResId(R.drawable.ic_action_add)
-                        .withDelay(0)
-                                //.withPadding(action_item_padding)
-                        .build();
-
-
-                FloatingActionMenu mFloatingMenu = new FloatingActionMenu
-                        .Builder(MainActivity.this)
-                        .addItem(item1)
-                        .withScrollDelegate(new FloatingActionMenu.AbsListViewScrollDelegate(listView))
-                                //.withThreshold(R.dimen.float_action_threshold)
-                                //.withGap(R.dimen.float_action_item_gap)
-                                //.withHorizontalPadding(R.dimen.float_action_h_padding)
-                                //.withVerticalPadding(R.dimen.float_action_v_padding)
-                        .withGravity(FloatingActionMenu.Gravity.RIGHT | FloatingActionMenu.Gravity.BOTTOM)
-                        .withDirection(FloatingActionMenu.Direction.Vertical)
-                        .animationDuration(300)
-                        .animationInterpolator(new OvershootInterpolator())
-                        .visible(true)
-                        .build();
+            listView = (CardListView) MainActivity.this.findViewById(R.id.myList);
+            if (listView != null) {
+                listView.setAdapter(mCardArrayAdapter);
+            }
 
 
 
-                mFloatingMenu.setOnItemClickListener(new FloatingActionMenu.OnItemClickListener() {
-                    @Override
-                    public void onItemClick(FloatingActionMenu floatingActionMenu, int i) {
+
+            FloatingActionItem item1 = new FloatingActionItem.Builder(0)
+                    .withResId(R.drawable.ic_action_add)
+                    .withDelay(0)
+                            //.withPadding(action_item_padding)
+                    .build();
+
+
+            FloatingActionMenu mFloatingMenu = new FloatingActionMenu
+                    .Builder(MainActivity.this)
+                    .addItem(item1)
+                    .withScrollDelegate(new FloatingActionMenu.AbsListViewScrollDelegate(listView))
+                            //.withThreshold(R.dimen.float_action_threshold)
+                            //.withGap(R.dimen.float_action_item_gap)
+                            //.withHorizontalPadding(R.dimen.float_action_h_padding)
+                            //.withVerticalPadding(R.dimen.float_action_v_padding)
+                    .withGravity(FloatingActionMenu.Gravity.RIGHT | FloatingActionMenu.Gravity.BOTTOM)
+                    .withDirection(FloatingActionMenu.Direction.Vertical)
+                    .animationDuration(300)
+                    .animationInterpolator(new OvershootInterpolator())
+                    .visible(true)
+                    .build();
+
+
+
+            mFloatingMenu.setOnItemClickListener(new FloatingActionMenu.OnItemClickListener() {
+                @Override
+                public void onItemClick(FloatingActionMenu floatingActionMenu, int i) {
 //                Toast.makeText(MainActivity.this,"ahahahahaha",Toast.LENGTH_LONG).show();
-                        MainActivity.this.newItemActivity();
-                    }
-                });
+                    MainActivity.this.newItemActivity();
+                }
+            });
 
 
 
 
-                this.progressDialog.dismiss();
+
+
+            this.progressDialog.dismiss();
 //            } catch (JSONException e) {
 //                Log.e("JSONException", "Error: " + e.toString());
 //            } // catch (JSONException e)
